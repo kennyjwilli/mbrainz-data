@@ -1,0 +1,45 @@
+name: Import MBrainz Data
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  import-and-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Install clojure tools
+        uses: DeLaGuardo/setup-clojure@13.4
+        with:
+          cli: 1.12.1.1550
+
+      - name: Cache clojure dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            ~/.deps.clj
+          key: cljdeps-${{ hashFiles('deps.edn') }}
+          restore-keys: cljdeps-
+
+      - name: Run MBrainz import pipeline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/run-all.sh
